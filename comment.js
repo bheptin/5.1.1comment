@@ -1,6 +1,6 @@
 /*global jQuery, Handlebars, Router */
-jQuery(function ($) {
-  'use strict';
+jQuery(function ($) { ///everything in this body uses $ for jquery
+  'use strict'; ///prevents functions from using global keys
   ///setting up an equals helper with Handlebars and Ember 2.0
   Handlebars.registerHelper('eq', function (a, b, options) {
     ///"show" function will take a context and return a String.
@@ -100,7 +100,7 @@ jQuery(function ($) {
       this.bindEvents();
       ajax.getJSON(this.integrateList.bind(this));///binding info through JSON
 
-      var router = new Router({   ///kind of like a prototype??
+      var router = new Router({   ///changing the site url
         '/:filter': (filter) => this.renderFiltered(filter)
       })
       router.init('/all'); ///turn out all info with added /all to url
@@ -116,14 +116,14 @@ jQuery(function ($) {
         .on('focusout', '.edit', e => this.update(e))
         .on('click', '.destroy', e => this.destroy(e));
     },
-    renderFiltered: function(filter){ //app filter, then render all above
+    renderFiltered: function(filter){ //captures the url and stores
       this.filter = filter;
       this.render();
     },
-    render: function () {   ///function to suit up some handlebar tags
-      var todos = this.getFilteredTodos();  ///'this' refers to app.
-      $('#todo-list').html(this.todoTemplate(todos));
-      $('#main').toggle(todos.length > 0);
+    render: function () {   ///
+      var todos = this.getFilteredTodos();  ///gives all 3 arrays of todos
+      $('#todo-list').html(this.todoTemplate(todos));///templating the HTML
+      $('#main').toggle(todos.length > 0);///rendering true if there is more than 1, no need for >0
       $('#toggle-all').prop('checked', this.getActiveTodos().length === 0);
       this.renderFooter();
       $('#new-todo').focus();
@@ -145,8 +145,8 @@ jQuery(function ($) {
       var isChecked = $(e.target).prop('checked');
 
       this.todos.forEach(todo => { ///moving checked to the isChecked section
-        todo.completed = isChecked;
-        ajax.update(todo);
+        todo.completed = isChecked;///if completed
+        ajax.update(todo);//delegates to server what has happened
       });
 
       this.render(); ///execute toggle when it happens
@@ -189,90 +189,91 @@ jQuery(function ($) {
     },
     create: function (e) { ///creating a "create" that uses the
       var $input = $(e.target);///"enter key" to post the user info
-      var val = $input.val().trim();
+      var val = $input.val().trim(); ///takes value of e and trim takes away whitespace
 
-      if (e.which !== ENTER_KEY || !val) {
-        return;
+      if (e.which !== ENTER_KEY || !val) { //prevents someone from hitting enter
+        return;                            //key and returning something
+                                          //"guard clause"
       }
 
       var uuid = util.uuid();///id gets added to the value, if there is
-      this.integrate(uuid, val);///a "same" input twice?!?!?
-      ajax.create(val, this.replace(uuid, this));
+      this.integrate(uuid, val);///pulled from integrate function
+      ajax.create(val, this.replace(uuid, this));//replace function - will run immediately
 
       $input.val('');
 
       this.render();
     },
-    replace: (oldId, context) => {///"same" input gets old id if it's
-      return (newTodo) => {///same?!?!
+    replace: (oldId, context) => {///runs immediately to replace whatever
+      return (newTodo) => {///returns updated newTodo
         var todo = context.todos.find((todo) => todo.id === oldId);
-        todo.id = newTodo.id;
-        util.store('todos-jquery', context.todos);
+        todo.id = newTodo.id;//finding an old uuid that matches a current uuid
+        util.store('todos-jquery', context.todos);///storing local, making them match server
       }
     },
     toggle: function (e) {
-      var i = this.indexFromEl(e.target);
+      var i = this.indexFromEl(e.target);///find target
       var todo = this.todos[i];
       todo.completed = !todo.completed;
       ajax.update(todo);
       this.render();
     },
-    edit: function (e) {
+    edit: function (e) {///allows the li's to be edited
       var $input = $(e.target).closest('li').addClass('editing').find('.edit');
       $input.val($input.val()).focus();
     },
-    editKeyup: function (e) {
+    editKeyup: function (e) {///once edit is done and "enter" is pressed, it resets the li
       if (e.which === ENTER_KEY) {
         e.target.blur();
       }
 
-      if (e.which === ESCAPE_KEY) {
+      if (e.which === ESCAPE_KEY) {///this is the opposite of above, nt setting anything
         $(e.target).data('abort', true).blur();
       }
     },
-    update: function (e) {
-      var el = e.target;
-      var $el = $(el);
-      var val = $el.val().trim();
+    update: function (e) {////info for updating the li info
+      var el = e.target; ///target of update
+      var $el = $(el);///suiting up the "element"
+      var val = $el.val().trim();///getting value and trimming whitespace
 
-      if (!val) {
+      if (!val) {///if there is no value, delete
         this.destroy(e);
         return;
       }
 
-      if ($el.data('abort')) {
-        $el.data('abort', false);
+      if ($el.data('abort')) {///if the element is made, but not entered,
+        $el.data('abort', false);///don't save
       } else {
         var todo = this.todos[this.indexFromEl(el)];
-        todo.title = val;
+        todo.title = val;////update todo and use ajax update to post
         ajax.update(todo);
       }
 
-      this.render();
+      this.render(); //render all of the function
     },
-    destroy: function (e) {
+    destroy: function (e) { ///setup to get rid of something?!?!
       var todo = this.todos.splice(this.indexFromEl(e.target), 1)[0];
       ajax.destroy(todo);
       this.render();
     },
-    notIntegrated: function (todo) {
+    notIntegrated: function (todo) { ////a way to put the li's into their order by id?
       return !this.todos.map((todo) => todo.id).includes(todo.id);
     },
     integrate: function (id, title, completed) {
-      this.todos.push({
-        id: id,
+      this.todos.push({ ///integrate by id, title, and status
+        id: id, ///keys: values
         title: title,
         completed: completed || false
       });
     },
-    integrateList: function (data) {
-      data.filter((todo) => this.notIntegrated(todo))
-          .forEach(todo => this.integrate(todo.id,
+    integrateList: function (data) { ////pushes everything down the line until it reaches "is-complete"
+      data.filter((todo) => this.notIntegrated(todo))///refers back to not integrated if not ready
+          .forEach(todo => this.integrate(todo.id, ///use these three types to build data. 
                                           todo.attributes.id,
                                           todo.attributes['is-complete']));
-      this.render();
+      this.render(); ////render the data
     }
   };
 
-  App.init();
+  App.init();///initialize the entire app
 });
